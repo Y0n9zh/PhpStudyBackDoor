@@ -1,56 +1,15 @@
-# phpStudyBackDoor
-phpStudy后门检测与利用工具，Python脚本，可一键 GetShell。
+# PhpStudyBackDoor
+- PhpStudy 后门检测与利用工具、Python 脚本、可一键 GetShell。
+- 原版工具地址：https://github.com/lovehack01/phpStudyBackDoor
 
-## 简述
-2019年9月20日，网上传出 phpStudy 软件存在后门，随后作者立即发布声明进行澄清，其真实情况是该软件官网语2016年被非法入侵，然后软件安装包（php_xmlrpc.dll）被植入后门，可进行执行远程命令执行。
+## 漏洞简述
+- PhpStudy 软件是国内的一款免费的 PHP 调试环境的程序集成包，通过集成 Apache、PHP、MySQL、phpMyAdmin、ZendOptimizer 多款软件一次性安装，无需配置即可直接安装使用，在国内有着近百万 PHP 语言学习者、开发者用户。
+- 正是这样一款公益性软件在 2018 年 12 月 4 日，西湖区公安分局网警大队接报案称，某公司发现公司内有 20 余台计算机被执行危险命令，疑似远程控制抓取账号密码等计算机数据回传大量敏感信息。
+- 通过专业技术溯源进行分析，查明了数据回传的信息种类、原理方法、存储位置，并聘请了第三方鉴定机构对软件中的 “后门” 进行司法鉴定，鉴定结果是该 “后门” 文件具有控制计算机的功能，嫌疑人已通过该后门远程控制下载运行脚本实现收集用户个人信息。
+- 截至 2019 年 1 月被抓获，犯罪团伙共非法控制计算机 67 万余台，非法获取账号密码类、聊天数据类、设备码类等数据 10 万余组，非法牟利 600 余万元。
+- 在 2019 年 9 月 20 日，网上爆出 PhpStudy 存在 “后门”。
 
-此工具为 python 3 编写，支持单 url 检测和批量 url 检测，以及执行 cmd 命令、一键 GetShell
+## 利用环境
+- Python 3
 
-## 环境
-python 3
-
-pip install requests
-
-## 漏洞检测利用
-
-### 0.帮助
-
-``python phpStudyBackDoor.py -h``
-
-![帮助](https://raw.githubusercontent.com/Writeup001/phpStudyBackDoor/master/image/help.png)
-
-
-### 1.单 url 检测
-
-``python phpStudyBackDoor.py -u "http://192.168.80.128"``
-
-存在漏洞与不存在漏洞
-
-![](https://raw.githubusercontent.com/Writeup001/phpStudyBackDoor/master/image/vuln.png)
-![](https://raw.githubusercontent.com/Writeup001/phpStudyBackDoor/master/image/novuln.png)
-
-
-
-### 2.执行 cmd 命令
-可执行 Windows 下任意 cmd 命令（前提是开启了 system 函数，默认为开启状态）
-
-``python phpStudyBackDoor.py -u "http://192.168.80.128" --cmdshell``
-
-![](https://raw.githubusercontent.com/Writeup001/phpStudyBackDoor/master/image/cmdshell.png)
-
-### 3.一键 GetShell 
-这个可是真的一键 Getshell 不骗人~~
-
-``python phpStudyBackDoor.py -u "http://192.168.80.128" --getshell``
-![](https://raw.githubusercontent.com/Writeup001/phpStudyBackDoor/master/image/getshell.png)
-
-### 4.批量 url 检测
-对 url.txt 文件中的链接进行批量检测
-
-``python phpStudyBackDoor.py -u "http://192.168.80.128" -f url.txt``
-![](https://raw.githubusercontent.com/Writeup001/phpStudyBackDoor/master/image/batch.png)
-
-## 参考引用
-https://github.com/theLSA/phpstudy-backdoor-rce
-
-https://github.com/NS-Sp4ce/PHPStudy_BackDoor_Exp
+- pip install requests
